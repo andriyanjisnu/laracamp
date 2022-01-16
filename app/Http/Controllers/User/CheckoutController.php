@@ -10,6 +10,7 @@ use Auth;
 use App\Http\Requests\User\Checkout\Store;
 use Mail;
 use App\Mail\Checkout\AfterCheckout;
+use Str;
 
 class CheckoutController extends Controller
 {
@@ -62,6 +63,7 @@ class CheckoutController extends Controller
 
         // Create checkout
         $checkout = Checkout::create($data);
+        $this->getSnapRedirect($checkout);
 
         // Sending Email
 
@@ -117,6 +119,46 @@ class CheckoutController extends Controller
 
     public function success(){
         return view('checkout.success');
+    }
+
+    public function getSnapRedirect(Checkout $checkout) {
+        $orderId =  $checkout->id.'-'.Str::random(5);
+        $price = $checkout->Camp->price * 1000;
+
+        $checkout->midtrans_booking_code = $orderId;
+
+        $transaction_details = [
+            'order_id' =>$orderId,
+            'gross_amount' => $price
+        ];
+
+        $items_details[] = [
+            'id' => $orderId,
+            'price' => $price,
+            'quantity' => 1,
+            'name' => "Payment for { $checkout->Camp->title } Camp"
+        ];
+
+        $userData = [
+            "first_name" => $checkout->User->name,
+            "last_name" => "",
+            "address" => $checkout->User->address,
+            "city" => "",
+            "postal_code" => "",
+            "phone" => $checkout->User->phone,
+            "country_code" => "IDN",
+        ];
+
+        $customerDetails = [
+            "first_name" => $checkout->User->name,
+            "last_name" => "",
+            "email" => $checkout->User->email,
+            "phone" => $checkout->User->phone,
+            "billing_address" => $userData,
+            "shipping_address" => $userData,
+        ];
+    
+
     }
 
 }

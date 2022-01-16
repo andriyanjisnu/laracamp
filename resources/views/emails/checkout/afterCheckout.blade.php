@@ -9,6 +9,7 @@ Thank you for register on camp <b>{{ $checkout->Camp->title }}</b>, please see p
 My Dashboard
 @endcomponent
 
+
 Thanks,<br>
 {{ config('app.name') }}
 @endcomponent
