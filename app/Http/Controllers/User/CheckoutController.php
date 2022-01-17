@@ -11,9 +11,19 @@ use App\Http\Requests\User\Checkout\Store;
 use Mail;
 use App\Mail\Checkout\AfterCheckout;
 use Str;
+use Midtrans;
 
 class CheckoutController extends Controller
-{
+{   
+
+    public function __construct()
+    {
+        Midtrans\Config::$serverKey = env('MIDTRANS_SERVERKEY');
+        Midtrans\Config::$isProduction = env('MIDTRANS_IS_PRODUCTION');
+        Midtrans\Config::$isSanitized = env('MIDTRANS_IS_SANITIZED');
+        Midtrans\Config::$is3ds = env('MIDTRANS_IS_3DS');
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -149,7 +159,7 @@ class CheckoutController extends Controller
             "country_code" => "IDN",
         ];
 
-        $customerDetails = [
+        $customer_details = [
             "first_name" => $checkout->User->name,
             "last_name" => "",
             "email" => $checkout->User->email,
@@ -157,6 +167,23 @@ class CheckoutController extends Controller
             "billing_address" => $userData,
             "shipping_address" => $userData,
         ];
+
+        $midtrans_params = [
+            'transaction_details' => $transaction_details,
+            'customer_details' => $customer_details,
+            'item_details' => $items_details,
+        ];
+
+        try {
+            // Get Snap Payment Page URL
+            $paymentUrl = \Midtrans\Snap::createTransaction($midtrans_params)->redirect_url;
+            $checkout->midtrans_url = $paymentUrl;
+            $checkout->save();
+
+            return $paymentUrl;
+        } catch (\Throwable $th) {
+            return false;
+        }
     
 
     }
